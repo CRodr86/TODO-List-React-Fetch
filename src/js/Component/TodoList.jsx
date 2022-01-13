@@ -1,45 +1,89 @@
-import React, { useState } from "react";
-
-//Components
-import AddButton from "./AddButton.jsx";
-import Input from "./Input.jsx";
-import List from "./List.jsx";
+import React, { useState, useEffect } from "react";
+import Task from "./Task.jsx";
+import Form from "./Form.jsx";
 
 const TodoList = () => {
+	//States
+	const [task, setTask] = useState("");
 	const [list, setList] = useState([]);
-	const [task, setTask] = useState([]);
 
-	const addTask = () => {
-		const newList = list.concat([task]);
-		setList(newList);
-		setTask("");
+	//Hooks
+	useEffect(() => {
+		fetch("https://assets.breatheco.de/apis/fake/todos/user/CRodr86", {
+			method: "GET",
+			headers: { "Content-Type": "application/json" },
+		})
+			.then((response) => {
+				return response.json();
+			})
+			.then((data) => {
+				setList(data);
+			})
+			.catch((error) => {
+				console.log("Error", error);
+			});
+	}, []);
+
+	//Functions
+	const apiUpdate = () => {
+		fetch("https://assets.breatheco.de/apis/fake/todos/user/CRodr86", {
+			method: "PUT",
+			body: JSON.stringify(list),
+			headers: { "Content-Type": "application/json" },
+		})
+			.then((response) => {
+				return response.json();
+			})
+			.then((data) => {
+				console.log(data);
+			})
+			.catch((error) => {
+				console.log("Error", error);
+			});
 	};
 
-	function pressEnter(ev) {
-		if (ev.key === "Enter") addTask();
-	}
+	const inputHandler = (ev) => {
+		setTask(ev.target.value);
+	};
+
+	const addTask = (ev) => {
+		setList([...list, { label: task, done: false }]);
+		setTask("");
+		apiUpdate();
+	};
+
+	const cleanList = () => {
+		let delTodo = list.splice(list.length);
+		setList(delTodo);
+		apiUpdate();
+	};
+
+	const removeTask = (index) => {
+		const newArray = list.filter((item, i) => i != index);
+		setList(newArray);
+		apiUpdate();
+	};
 
 	return (
-		<div className="container">
-			<div className="row">
-				<div className="col d-flex justify-content-center">
-					<h1>TODO List</h1>
-				</div>
-				<div className="row d-flex justify-content-center m-2">
-					<Input
-						valueInp={task}
-						onChangeInp={(ev) => {
-							setTask(ev.target.value);
-						}}
-						onKeyPressInp={task.length > 0 ? pressEnter : null}
-					/>
-					<AddButton onClickBut={task.length > 0 ? addTask : null} />
-				</div>
-				<div>
-					<List setList={setList} list={list} />
-				</div>
+		<>
+			<Form
+				input={task}
+				inputHandler={inputHandler}
+				addTask={task.length > 0 ? addTask : null}
+				cleanList={cleanList}
+			/>
+			<div className="list">
+				<ul>
+					{list.map((task, i) => (
+						<Task
+							key={i}
+							task={task.label}
+							removeTask={() => removeTask(i)}
+						/>
+					))}
+				</ul>
 			</div>
-		</div>
+		</>
 	);
 };
 
